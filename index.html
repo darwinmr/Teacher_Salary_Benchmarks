@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=utf-8 />
+    <title>Teacher Pay</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+<style>
+    body {
+        margin:0;
+        padding:0;
+        font-family:
+        sans-serif;
+        }
+    h1 {
+        position: absolute;
+        left: 50px;
+        top: 10px;
+        padding: 8px 2%;
+        margin: 0;
+        background: #00124c;
+        box-shadow: 0 0 15px rgba(0,0,0,0.2);
+        border-radius: 3px;
+        color: whitesmoke;
+        font-size: 2.5em;
+        z-index: 800;
+        }
+    
+    h2 {
+      position:fixed;
+      left:800px;
+      right: 50px;
+      top: 10px;
+      padding: 8px 2%;
+      margin: 0;
+      background:  #00124c;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      border-radius: 3px;
+      color: whitesmoke;
+      font-size:small;
+      z-index: 800;
+    }
+        
+    .map-wrapper {
+        position: relative;
+        }
+
+    #map {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    }
+
+    .legend {
+      line-height: 45px;
+      padding:1px;
+      color: #555;
+     }
+
+ .legend i {
+      width: 15px;
+      height: 15px;
+      float: left;
+      margin-right: 7px;
+      opacity: 0.7;
+    }
+
+  .circle
+{
+float: left;
+border: 1px solid #222;
+border-radius: 50%;
+}
+
+.legend .colorcircle {
+border-radius: 50%;
+width: 15px;
+height: 15px;
+margin-top: 0px;
+}
+.legend .circlepadding {
+border-radius: 50%;
+background: rgba(255, 255, 255, 0.85);
+}
+
+</style>
+
+</head>
+<body>
+        <div id='map'></div>
+        <h1>Teacher Salary Benchmarks
+
+          <a href="https://www.nea.org/resource-library/teacher-salary-benchmarks" target="_blank"><img src="assets/NEA_logo.svg" width="100px" height="70px"/></a>
+
+      
+        </h1>
+        <h2>Are you a teacher? Does your state offer a higher base pay if you have acquired a masters degree? Find out if you could qualify by clicking on your state. You will see the starting salaries for educators followed by the starting salaries with a masters degree. Click on the NEA logo to see more detailed information.
+        </h2>
+        
+
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ajax/2.1.0/leaflet.ajax.min.js"></script>
+
+
+<script>
+console.log("hello world!");
+var map = L.map('map', {
+        center: [39.5, -95.3],
+        zoom: 4
+    });
+
+    var Stamen_TonerLite = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lite/{z}/{x}/{y}{r}.{ext}', {
+      	attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      	ext: 'png'
+    }).addTo(map);
+
+    states = L.geoJson.ajax("assets/data1.geojson",{
+    attribution: 'Data: NEA, Map: Miranda Darwin',
+    onEachFeature: function (feature, layer) {
+         layer.bindPopup(feature.properties.name + "~  Starting Salary: $" + feature.properties.start + ", Masters Salary: $" + feature.properties.masters);
+     },
+    pointToLayer: function (feature, x){
+      return L.circleMarker(x, {
+
+        color: ' #00124c',
+        opacity: 1,
+        weight: 2,
+        fillColor: ' #00124c',
+        fillOpacity: .6,
+        radius: calcRadius(feature.properties.start),
+        bindPopup: (feature.properties.name)
+        
+
+    }).on({
+            mouseover: function(e){
+            this.setStyle({color: '#850101',fillColor: '#850101', radius: calcRadius(feature.properties.masters)});
+            this.bringToFront()
+        },
+            mouseout: function(e){
+            this.setStyle({color:' #00124c', fillColor: ' #00124c', radius: calcRadius(feature.properties.start)})
+            } })},});
+    
+  
+
+var minValue = 32495;
+var minRadius = 5;
+
+function calcRadius(val) {
+        return 1.00 * Math.pow(val/minValue,4.0) * minRadius;
+        }
+
+states.addTo(map);
+
+L.control.scale({position: 'bottomleft'}).addTo(map);
+
+function getRadius(r) {
+return  r > 500 ? 46 :
+       r > 150 ? 26 :
+       r > 25 ? 12 :
+       0;
+}
+
+var legend = L.control({position: 'bottomright'});
+legend.onAdd = function (map) {
+
+var div = L.DomUtil.create('div', 'info legend');
+grades = [100, 200, 550],
+labels = ['<strong>Salary</strong>'],
+categories = ['32000','40000','60000'];
+
+for (var i = 0; i < grades.length; i++) {
+       var grade = grades[i];
+       //this is very incorrect, still trying to figure out how to create an accurate legend
+  labels.push(
+       '<i class="circlepadding" style="width: '+Math.max(8,(7-2.2*getRadius(grade)))+'px;"></i> <i style="background: #00124c; width: '+getRadius(grade)*2+'px; height: '+getRadius(grade)*2+'px; border-radius: 50%; margin-top: '+Math.max(0,(9-getRadius(grade)))+'px;"></i><i class="circlepadding" style="width: '+Math.max(2,(25-2*getRadius(grade)))+'px;"></i> ' + categories[i]);
+  }
+div.innerHTML = labels.join('<br>');
+return div;
+};
+legend.addTo(map);
+
+
+
+</script>
+</body>
+</html>
+
